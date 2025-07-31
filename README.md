@@ -43,7 +43,7 @@ options:
 
 ## Example
 
-Indexing [`msmarco-document-v2`](https://ir-datasets.com/msmarco-document-v2.html) along the [`train` dataset](https://ir-datasets.com/msmarco-document-v2.html#msmarco-document-v2/train):
+Indexing [`msmarco-document-v2`](https://ir-datasets.com/msmarco-document-v2.html) along with the [`train` dataset](https://ir-datasets.com/msmarco-document-v2.html#msmarco-document-v2/train):
 
 ```bash
 uv run main.py msmarco-document-v2/train train msmarco-document-v2 --add_corpus --document_text_attr body --batch_size 128
