@@ -6,18 +6,55 @@ import requests
 from tqdm import tqdm
 
 
+def sanitize(s: str | None):
+    """Remove 0x00 bytes from a string as Postgres cannot handle them.
+
+    :param s: Input string.
+    :return: Sanitized input string.
+    """
+    return None if s is None else s.replace("\x00", "")
+
+
 def main():
     ap = ArgumentParser()
-    ap.add_argument("DATASET_ID", type=str)
-    ap.add_argument("DATASET_NAME", type=str)
-    ap.add_argument("CORPUS_NAME", type=str)
-    ap.add_argument("--batch_size", type=int, default=2**10)
-    ap.add_argument("--language", default="English")
-    ap.add_argument("--min_relevance", type=int, default=1)
-    ap.add_argument("--add_corpus", action="store_true")
-    ap.add_argument("--hostname", default="localhost")
-    ap.add_argument("--port", type=int, default=8103)
-    ap.add_argument("--text_attr", default="text")
+    ap.add_argument("DATASET_ID", type=str, help="Dataset identifier for ir-datasets.")
+    ap.add_argument("DATASET_NAME", type=str, help="Name of dataset in ir-explorer.")
+    ap.add_argument("CORPUS_NAME", type=str, help="Name of corpus in ir-explorer.")
+    ap.add_argument(
+        "--batch_size", type=int, default=2**8, help="How many items to add at once."
+    )
+    ap.add_argument("--language", default="English", help="Corpus language.")
+    ap.add_argument(
+        "--min_relevance",
+        type=int,
+        default=1,
+        help="Minimum relevance score for the dataset.",
+    )
+    ap.add_argument(
+        "--add_corpus", action="store_true", help="Whether to add the documents."
+    )
+    ap.add_argument("--hostname", default="localhost", help="Backend hostname.")
+    ap.add_argument("--port", type=int, default=8103, help="Backend port.")
+    ap.add_argument(
+        "--document_text_attr",
+        default="text",
+        help="Attribute name to use for getting the document text.",
+    )
+    ap.add_argument(
+        "--document_title_attr",
+        default="title",
+        help="Attribute name to use for getting the document title.",
+    )
+    ap.add_argument(
+        "--query_text_attr",
+        default="text",
+        help="Attribute name to use for getting the query text.",
+    )
+    ap.add_argument(
+        "--query_description_attr",
+        default="description",
+        help="Attribute name to use for getting the query description.",
+    )
     args = ap.parse_args()
 
     backend_url = f"http://{args.hostname}:{args.port}"
@@ -39,8 +76,8 @@ def main():
                 json=[
                     {
                         "id": doc.doc_id,
-                        "title": getattr(doc, "title", None),
-                        "text": getattr(doc, args.text_attr),
+                        "title": sanitize(getattr(doc, args.document_title_attr, None)),
+                        "text": sanitize(getattr(doc, args.document_text_attr)),
                     }
                     for doc in batch
                 ],
@@ -66,8 +103,10 @@ def main():
             json=[
                 {
                     "id": query.query_id,
-                    "text": query.text,
-                    "description": None,
+                    "text": sanitize(getattr(query, args.query_text_attr)),
+                    "description": sanitize(
+                        getattr(query, args.query_description_attr, None)
+                    ),
                 }
                 for query in batch
             ],
